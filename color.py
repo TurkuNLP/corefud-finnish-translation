@@ -26,34 +26,36 @@ rgb_colors = index_fonts()
 print(f"{len(rgb_colors)} unique colors available in palette.txt")
 
 
-def make_spans(color_map, characters):
-    result = []
-    last_color = None
-    current_text = []
-    for color, c in zip(color_map, characters):
-        if last_color is None or last_color == color:
-            current_text.append(c)
-            last_color = color
+def make_spans(color_map, paragraphs):
+    all_results = [] # list of paragraphs where each is a list of (color, text)-tuples
+    char_idx = -1
+    for para in paragraphs:
+        result = []
+        last_color = None
+        current_text = []
+        for c in para:
+            char_idx += 1
+            color = color_map[char_idx]
+            if last_color is None or last_color == color:
+                current_text.append(c)
+                last_color = color
+            else:
+                assert last_color is not None and len(current_text) > 0
+                result.append((last_color, "".join(current_text)))
+                last_color = color
+                current_text = [c]
         else:
             assert last_color is not None and len(current_text) > 0
             result.append((last_color, "".join(current_text)))
-            last_color = color
-            current_text = [c]
-    else:
-        assert last_color is not None and len(current_text) > 0
-        result.append((last_color, "".join(current_text)))
-    return result
+        all_results.append(result)
+    return all_results
 
 
 
 
-def color_doc(doc_text, doc_idx, annotations, output_doc):
-    # p, p_idx_, doc
-    total_len=0
+def color_doc(doc_paragraphs, doc_idx, annotations, output_doc):
     
-    pgraph=output_doc.add_paragraph('')
-    
-    color_map=[[] for _ in range(len(doc_text))] # this will store the span information for each char in text, init with empty
+    color_map=[[] for _ in range(len("".join(p for p in doc_paragraphs)))] # this will store the span information for each char in text, init with empty
 
     # iterate through annotations
     for markable in annotations:
@@ -72,18 +74,21 @@ def color_doc(doc_text, doc_idx, annotations, output_doc):
 
     #colors=index_fonts()
 
-    spans=make_spans(color_map, doc_text)
+    spans=make_spans(color_map, doc_paragraphs)
 
-    for color, txt in spans:
-        r = pgraph.add_run(txt)
-        font_idx = color_lookup.get("+".join(color), None)
-        if font_idx >= 0:
-            if font_idx > len(rgb_colors) - 1:
-                print(f"Warning, not enough colors, skipping {color}!!")
-                continue
-            r.font.color.rgb = rgb_colors[font_idx]
-
-    total_len += len(doc_text) + 1
+    # write docx
+    total_len=0
+    for para_spans in spans:
+        pgraph=output_doc.add_paragraph('')
+        for color, txt in para_spans:
+            r = pgraph.add_run(txt)
+            font_idx = color_lookup.get("+".join(color), None)
+            if font_idx >= 0:
+                if font_idx > len(rgb_colors) - 1:
+                    print(f"Warning, not enough colors, skipping {color}!!")
+                    continue
+                r.font.color.rgb = rgb_colors[font_idx]
+        total_len += len("".join(t for c, t in para_spans))+1
 
     return total_len, color_lookup
 
@@ -110,7 +115,7 @@ def main(args):
         total_chars += len(t) + 1
         p.add_run(t).bold=True
         
-        l , color_map = color_doc(d["text"], d["doc_id"], d["annotations"], doc)
+        l , color_map = color_doc(d["paragraphs"], d["doc_id"], d["annotations"], doc)
         total_chars += l
         metadata.append({"document number": i, "doc_id": d["doc_id"], "color_map": color_map})
         

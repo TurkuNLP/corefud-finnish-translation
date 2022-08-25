@@ -62,17 +62,22 @@ def get_text(comm):
     assert False, "Raw text not found from the comments!!!"
 
 def gather_doc_text(doc):
+    paragraphs = []
     raw_text = ""
     next_space=""
     for comm, sent in yield_sents(doc):
         if is_new_paragraph(comm):
             if raw_text != "":
-                raw_text = raw_text + "\n\n"
+                paragraphs.append(raw_text)
+                raw_text = ""
             next_space=""
         sent_text = get_text(comm)
         raw_text = raw_text + next_space + sent_text
         next_space = " " if "SpaceAfter=No" not in sent[-1][MISC] else " "
-    return raw_text
+    else:
+        if raw_text:
+            paragraphs.append(raw_text)
+    return paragraphs
             
 def get_entity_annotation(misc):
 
@@ -110,13 +115,14 @@ def get_token_index(current, token, doc):
         current += 1
 
 
-def yield_markables(doc, doc_text):
+def yield_markables(doc, doc_paragraphs):
     # doc = conllu lines
     # doc_text = original, raw text constructed from the conllu
     
     counter = 0
     open_markables = []
     current_char_index = 0 # where are we going in terms of raw text
+    doc_text = "".join(doc_paragraphs) # we do not care losing paragraph spacing here
     for comm, sent in yield_sents(doc):
         for i, token in enumerate(sent):
             # skip nulls and multiword tokens 
@@ -156,12 +162,12 @@ def main(args):
     all_annotations = []
     with open(args.file, "rt", encoding="utf-8") as f:
         for i, (doc_id, doc) in enumerate(yield_docs(f)):
-            doc_text = gather_doc_text(doc)
+            doc_paragraphs = gather_doc_text(doc)
             markables = []
-            for markable in yield_markables(doc, doc_text):
+            for markable in yield_markables(doc, doc_paragraphs):
                 markables.append(markable)
                 
-            d = {"doc_id": doc_id, "text": doc_text, "annotations": markables}
+            d = {"doc_id": doc_id, "paragraphs": doc_paragraphs, "annotations": markables}
             all_annotations.append(d)
                 
     with open(args.output, "wt", encoding="utf-8") as f:
@@ -178,7 +184,5 @@ if __name__=="__main__":
     parser.add_argument("--output", default=None, required=True, help="Output file name")
     args = parser.parse_args()
     
-    
-    # TODO: better representation of paragraphs?
     
     main(args)
