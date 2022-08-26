@@ -4,8 +4,8 @@ import json
 import argparse
 import re
 
-opening_markable_re = re.compile("(?:\((?P<complete>(?P<completeidx>[0-9]+)[^\(\)]+)\))|(?:\((?P<opening>(?P<openingidx>[0-9]+)\-[^\(\)]+))")
-closing_markable_re = re.compile("(?:^|\))([0-9]+)")
+opening_markable_re = re.compile("(?:\((?P<complete>(?P<completeidx>[e0-9\[\]\/]+)[^\(\)]+)\))|(?:\((?P<opening>(?P<openingidx>[e0-9\[\]\/]+)\-[^\(\)]+))")
+closing_markable_re = re.compile("(?:^|\))([e0-9\[\]\/]+)")
 
 def yield_docs(f):
 
@@ -108,8 +108,9 @@ def return_latest_markable(open_markables, idx):
 # identity = named entity identity (if available)
 
     
-def get_token_index(current, token, doc):
+def get_token_index(idx, current, token, doc):
     while True:
+        assert current<len(doc)
         if doc[current:current+len(token)] == token:
             return current, current+len(token)
         current += 1
@@ -124,20 +125,29 @@ def yield_markables(doc, doc_paragraphs):
     current_char_index = 0 # where are we going in terms of raw text
     doc_text = "".join(doc_paragraphs) # we do not care losing paragraph spacing here
     for comm, sent in yield_sents(doc):
+        skip_tokens = [] # these are part of a multiword token, skip when scanning the raw text
         for i, token in enumerate(sent):
             # skip nulls and multiword tokens 
-            if "." in token[ID] or "-" in token[ID]: # ok to skip as these are not part of raw text (multiword is always token 1 + token 2 in this corpus)
-                continue
-            
+            if "-" in token[ID]:
+                s, e = token[ID].split("-")
+                for tidx in range(int(s), int(e)+1):
+                    skip_tokens.append(str(tidx))
+
             entity_annotation = get_entity_annotation(token[MISC])
             
-            token_start, token_end = get_token_index(current_char_index, token[FORM], doc_text) # token is doc_text[token_start:token_end]
-            current_char_index = token_end
+            if token[ID] in skip_tokens:
+                pass # do nothing (use the previous token_start, token_end
+            elif "." in token[ID]:
+                token_start, token_end = None, None # skip
+            else:
+                token_start, token_end = get_token_index(token[ID], current_char_index, token[FORM], doc_text) # token is doc_text[token_start:token_end]
+                current_char_index = token_end
                 
             # (1) find all opened markables (complete or partial) from annotation
             for hit in opening_markable_re.findall(entity_annotation):
                 if hit[0] != "": # complete markable
-                    yield {"idx": hit[1], "text": doc_text[token_start:token_end], "annotation": hit[0], "start": token_start, "end": token_end, "counter": counter}
+                    text = doc_text[token_start:token_end] if token_start is not None and token_end is not None else None
+                    yield {"idx": hit[1], "text": text, "annotation": hit[0], "start": token_start, "end": token_end, "counter": counter}
                     counter += 1
                 else: # partial
                     open_markables.append({"idx": hit[3], "text": None, "annotation": hit[2], "start": token_start, "end": None})
@@ -145,7 +155,7 @@ def yield_markables(doc, doc_paragraphs):
             # (2) close the markables from annotation
             for idx in closing_markable_re.findall(entity_annotation):
                 data = open_markables.pop(return_latest_markable(open_markables, idx))
-                data["text"] = doc_text[data["start"]:token_end]
+                data["text"] = doc_text[data["start"]:token_end] if data["start"] is not None and token_end is not None else None
                 data["end"] = token_end
                 data["counter"] = counter
                 counter += 1
@@ -154,6 +164,7 @@ def yield_markables(doc, doc_paragraphs):
     else:
         if len(open_markables) > 0:
             print("\nThere are still open markables when the document ends!!!\n")
+            print(doc[:5])
             print(open_markables)
             assert False
         

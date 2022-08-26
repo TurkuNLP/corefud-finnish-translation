@@ -60,7 +60,7 @@ def color_doc(doc_paragraphs, doc_idx, annotations, output_doc):
     # iterate through annotations
     for markable in annotations:
         # {"idx": "1", "text": "Introduction", "annotation": "1-abstract-new-cf1-1-sgl", "start": 0, "end": 12, "counter": 0}
-        if "-sgl" in markable["annotation"]:
+        if "-sgl" in markable["annotation"] or markable["start"] is None or markable["end"] is None:
             #print("Skipping singleton markable:", markable)
             continue
         for lst in color_map[markable["start"]:markable["end"]]:
@@ -85,7 +85,7 @@ def color_doc(doc_paragraphs, doc_idx, annotations, output_doc):
             font_idx = color_lookup.get("+".join(color), None)
             if font_idx >= 0:
                 if font_idx > len(rgb_colors) - 1:
-                    print(f"Warning, not enough colors, skipping {color}!!")
+                    print(f"Warning, not enough colors, skipping {color} in document {doc_idx}!!")
                     continue
                 r.font.color.rgb = rgb_colors[font_idx]
         total_len += len("".join(t for c, t in para_spans))+1
@@ -99,6 +99,7 @@ def main(args):
         data = json.load(f)
 
     total_chars = 0
+    file_counter = 0
 
     doc = docx.Document()
     metadata = []
@@ -119,12 +120,24 @@ def main(args):
         total_chars += l
         metadata.append({"document number": i, "doc_id": d["doc_id"], "color_map": color_map})
         
-    print(f"Total number of characters in this docx: {total_chars}")
+        if total_chars > 900000: #document full!
+            print(f"Total number of characters in this docx: {total_chars}")
+            print(f"Saving to {args.output_dir}/file_{file_counter:03d}.docx")
+            doc.save(f"{args.output_dir}/file_{file_counter:03d}.docx")
+            file_counter += 1
+            total_chars = 0
+            doc = docx.Document()
+            
+    else:
+        print(f"Total number of characters in this docx: {total_chars}")
+        print(f"Saving to {args.output_dir}/file_{file_counter:03d}.docx")
+        doc.save(f"{args.output_dir}/file_{file_counter:03d}.docx")
+        
 
-    with open(args.meta, "wt", encoding="utf-8") as f:
+
+    with open(f"{args.output_dir}/meta.json", "wt", encoding="utf-8") as f:
         json.dump(metadata, f)
     
-    doc.save(args.docx)
 
 
 
@@ -136,8 +149,7 @@ if __name__=="__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", default=None, required=True, help="Input json file")
-    parser.add_argument("--docx", default=None, required=True, help="Output docx file")
-    parser.add_argument("--meta", default=None, required=True, help="Output metadata json file")
+    parser.add_argument("--output_dir", default=None, required=True, help="Output docx directory")
     args = parser.parse_args()
     
     main(args)
