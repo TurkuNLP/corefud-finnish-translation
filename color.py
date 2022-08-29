@@ -6,7 +6,7 @@ import sys
 
 def index_fonts():
     palette=[]
-    with open("palette.txt") as f:
+    with open("palette_729.txt") as f:
         for line in f:
             line=line.strip()
             if not line.startswith("#"):
@@ -23,8 +23,7 @@ def index_fonts():
     return rgb_colors
 
 rgb_colors = index_fonts()
-print(f"{len(rgb_colors)} unique colors available in palette.txt")
-
+print(f"{len(rgb_colors)} unique colors available in color palette")
 
 def make_spans(color_map, paragraphs):
     all_results = [] # list of paragraphs where each is a list of (color, text)-tuples
