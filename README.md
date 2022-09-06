@@ -1,8 +1,12 @@
 # corefud-finnish-translation
 
-CorefUD coreference data machine translated to Finnish.
+CorefUD coreference data machine translated to Finnish. Currently including translations of English-GUM and Czech-PCEDT.
 
 # License
+
+### Code
+
+CC BY-SA 4.0
 
 ### Finnish translations
 
