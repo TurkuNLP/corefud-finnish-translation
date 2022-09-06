@@ -1,1 +1,1 @@
-# gum-finnish-coref
+# corefud-finnish-translation
