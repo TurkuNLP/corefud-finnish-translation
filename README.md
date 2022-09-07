@@ -23,13 +23,13 @@ Visualize coreference clusters:
 Each mention in the json format includes a start and end index for slicing, given as global character indices for the full, concatenated document text (`document_text = "".join(paragraphs)`). Therefore, `mention["text"] == document_text[mention["start"]:mention["end"]]`.
 
 
-# License
+# Licenses
 
 ### Code
 
 CC BY-SA 4.0
 
-### Finnish translations
+### Translated Finnish data
 
 CC BY-NC-SA 4.0
 
@@ -48,7 +48,7 @@ Czech-PCEDT: CC BY-NC-SA 3.0
 
 ### Finnish translations
 
-[TODO]
+Not yet published, but please acknowledge if you use this in your work.
 
 ### Original datasets
 
