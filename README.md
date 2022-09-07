@@ -12,7 +12,7 @@ CorefUD 1.0 coreference data machine translated to Finnish. Currently including 
 * `translation-outputs/treebank/{train,dev}/{train,dev}.json`: Translated docx files converted to json (produced by running `docx2json.py`)
 
 
-Note that during translation, some of information available in the original datasets is lost. The translated data includes annotations for mention spans (singleton mentions were not translated) and coreference cluster identifiers.
+Note that during conversion/translation, some of the information available in the original datasets is lost. The translated data includes annotations for mention spans (singleton mentions were not translated) and coreference cluster identifiers for each mention.
 
 # Usage
 
