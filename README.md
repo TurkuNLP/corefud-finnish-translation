@@ -1,6 +1,27 @@
 # corefud-finnish-translation
 
-CorefUD coreference data machine translated to Finnish. Currently including translations of English-GUM and Czech-PCEDT.
+CorefUD 1.0 coreference data machine translated to Finnish. Currently including translations of English-GUM and Czech-PCEDT.
+
+# Files
+
+* `translation-inputs/treebank/{train,dev}/{train,dev}.json`: Original data converted from conllu into json (produced by runnning `conllu2json.py`)
+* `translation-inputs/treebank/{train,dev}/*.docx`: Original data converted to docx in order to translate it (produced by running `color.py`)
+* `translation-inputs/treebank/{train,dev}/meta.json`: Metadata needed when converting docx files back to json (produced by running `color.py`)
+
+* `translation-outputs/treebank/{train,dev}/*.docx`: Docx files translated to Finnish (produced by DeepL service)
+* `translation-outputs/treebank/{train,dev}/{train,dev}.json`: Translated docx files converted to json (produced by running `docx2json.py`)
+
+
+Note that during translation, some of information available in the original datasets is lost. The translated data includes annotations for mention spans (singleton mentions were not translated) and coreference cluster identifiers.
+
+# Usage
+
+Visualize coreference clusters:
+
+`python3 group_mentions.py --file translation-outputs/treebank/{train,dev}/{train,dev}.json | less`
+
+Each mention in the json format includes a start and end index for slicing, given as global character indices for the full, concatenated document text (`document_text = "".join(paragraphs)`). Therefore, `mention["text"] == document_text[mention["start"]:mention["end"]]`.
+
 
 # License
 
