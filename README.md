@@ -27,7 +27,7 @@ Each mention in the json format includes a start and end index for slicing, give
 
 ### Code
 
-CC BY-SA 4.0
+Apache 2.0 license 
 
 ### Translated Finnish data
 
